@@ -74,64 +74,78 @@ export const OnlyOfficeEditor: React.FC<OnlyOfficeEditorProps> = ({
     };
   }, [isOpen]);
 
-  const loadOnlyOfficeAPI = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setFallbackMode(false);
+ const loadOnlyOfficeAPI = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    setFallbackMode(false);
 
-      // Load settings and get server URL
-      const settings = await OnlyOfficeService.loadSettings();
-      const currentServerUrl = settings.serverUrl;
-      setServerUrl(currentServerUrl);
-      console.log('Using OnlyOffice server URL from profile settings:', currentServerUrl);
+    // Load settings and get server URL
+    const settings = await OnlyOfficeService.loadSettings();
+    const currentServerUrl = settings.serverUrl;
+    setServerUrl(currentServerUrl);
+    console.log('Using OnlyOffice server URL:', currentServerUrl);
 
-      if (window.DocsAPI) {
-        console.log('DocsAPI already loaded, initializing editor...');
+    // Check if script is already loaded
+    if (window.DocsAPI) {
+      console.log('DocsAPI already loaded, initializing editor...');
+      await initializeEditor();
+      return;
+    }
+
+    // Check if script is already injected
+    const existingScript = document.querySelector(`script[src="${currentServerUrl}/web-apps/apps/api/documents/api.js"]`);
+    if (existingScript) {
+      console.log('API script already injected, waiting for it to load...');
+      existingScript.addEventListener('load', async () => {
+        console.log('API script loaded (from existing), initializing editor...');
         await initializeEditor();
-        return;
-      }
+      });
+      return;
+    }
 
-      // Skip availability check since it causes CORS issues
-      console.log('Skipping server availability check to avoid CORS issues');
+    console.log(`Injecting API script from ${currentServerUrl}/web-apps/apps/api/documents/api.js`);
+    const script = document.createElement('script');
+    script.src = `${currentServerUrl}/web-apps/apps/api/documents/api.js`;
+    script.async = true;
 
-      console.log(`Loading API script from ${currentServerUrl}/web-apps/apps/api/documents/api.js`);
-      const script = document.createElement('script');
-      script.src = `${currentServerUrl}/web-apps/apps/api/documents/api.js`;
-      script.async = true;
+    script.onload = async () => {
+      console.log('API script loaded successfully');
+      await initializeEditor();
+    };
 
-      script.onload = async () => {
-        console.log('My Editor API loaded successfully');
-        await initializeEditor();
-      };
-
-      script.onerror = (error) => {
-        console.error('Failed to load My Editor API:', error);
-        setError('My Editor server is not accessible. Using fallback editor.');
-        setFallbackMode(true);
-        setLoading(false);
-      };
-
-      document.head.appendChild(script);
-    } catch (error) {
-      console.error('Error loading My Editor API:', error);
-      setError('Failed to initialize My Editor editor. Using fallback mode.');
+    script.onerror = (error) => {
+      console.error('Failed to load API script:', error);
+      setError('My Editor server is not accessible. Using fallback editor.');
       setFallbackMode(true);
       setLoading(false);
-    }
-  };
+    };
+
+    document.head.appendChild(script);
+  } catch (error) {
+    console.error('Error loading API script:', error);
+    setError('Failed to initialize My Editor editor. Using fallback mode.');
+    setFallbackMode(true);
+    setLoading(false);
+  }
+};
+
 
   const initializeEditor = async () => {
     try {
       if (!window.DocsAPI) {
         if (connectionAttempts < maxConnectionAttempts) {
           setConnectionAttempts(prev => prev + 1);
-          console.log(`Retrying My Editor API initialization (attempt ${connectionAttempts + 1}/${maxConnectionAttempts})...`);
-          setTimeout(() => loadOnlyOfficeAPI(), 2000);
+
+          const retryDelay = Math.min(2000 * Math.pow(2, connectionAttempts), 10000); // 2s, 4s, 8s, max 10s
+          console.log(`Retrying My Editor API initialization (attempt ${connectionAttempts + 1}/${maxConnectionAttempts}) after ${retryDelay}ms...`);
+          
+          setTimeout(() => loadOnlyOfficeAPI(), retryDelay);
           return;
         }
         throw new Error('My Editor API not available after multiple attempts');
       }
+
 
       let documentConfig;
       if ((mode === 'edit' || mode === 'view') && templateId) {
