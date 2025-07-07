@@ -80,55 +80,83 @@ export const OnlyOfficeEditor: React.FC<OnlyOfficeEditorProps> = ({
     setError(null);
     setFallbackMode(false);
 
-    // Load settings and get server URL
     const settings = await OnlyOfficeService.loadSettings();
     const currentServerUrl = settings.serverUrl;
     setServerUrl(currentServerUrl);
     console.log('Using OnlyOffice server URL:', currentServerUrl);
 
-    // Check if script is already loaded
+    // If DocsAPI is already loaded, initialize
     if (window.DocsAPI) {
       console.log('DocsAPI already loaded, initializing editor...');
       await initializeEditor();
       return;
     }
 
-    // Check if script is already injected
+    // Check if script already exists
     const existingScript = document.querySelector(`script[src="${currentServerUrl}/web-apps/apps/api/documents/api.js"]`);
-    if (existingScript) {
-      console.log('API script already injected, waiting for it to load...');
-      existingScript.addEventListener('load', async () => {
-        console.log('API script loaded (from existing), initializing editor...');
+    if (!existingScript) {
+      console.log('Injecting API script...');
+      const script = document.createElement('script');
+      script.src = `${currentServerUrl}/web-apps/apps/api/documents/api.js`;
+      script.async = true;
+
+      // Set timeout for script loading
+      const scriptLoadTimeout = setTimeout(() => {
+        console.error('API script load timed out');
+        setError('My Editor API script load timed out. Retrying...');
+        retryLoadWithBackoff();
+      }, 8000); // 8 seconds max
+
+      script.onload = async () => {
+        clearTimeout(scriptLoadTimeout);
+        console.log('API script loaded successfully');
         await initializeEditor();
-      });
-      return;
+      };
+
+      script.onerror = () => {
+        clearTimeout(scriptLoadTimeout);
+        console.error('Failed to load API script');
+        setError('My Editor server is not accessible. Using fallback editor.');
+        setFallbackMode(true);
+        setLoading(false);
+      };
+
+      document.head.appendChild(script);
+    } else {
+      console.log('API script already injected, waiting...');
+      // Retry initialization after short delay
+      setTimeout(() => {
+        if (window.DocsAPI) {
+          initializeEditor();
+        } else {
+          console.warn('DocsAPI still not ready, retrying...');
+          retryLoadWithBackoff();
+        }
+      }, 2000);
     }
-
-    console.log(`Injecting API script from ${currentServerUrl}/web-apps/apps/api/documents/api.js`);
-    const script = document.createElement('script');
-    script.src = `${currentServerUrl}/web-apps/apps/api/documents/api.js`;
-    script.async = true;
-
-    script.onload = async () => {
-      console.log('API script loaded successfully');
-      await initializeEditor();
-    };
-
-    script.onerror = (error) => {
-      console.error('Failed to load API script:', error);
-      setError('My Editor server is not accessible. Using fallback editor.');
-      setFallbackMode(true);
-      setLoading(false);
-    };
-
-    document.head.appendChild(script);
   } catch (error) {
     console.error('Error loading API script:', error);
-    setError('Failed to initialize My Editor editor. Using fallback mode.');
+    setError('Failed to initialize editor. Using fallback mode.');
     setFallbackMode(true);
     setLoading(false);
   }
 };
+
+// Retry with exponential backoff
+const retryLoadWithBackoff = () => {
+  if (connectionAttempts < maxConnectionAttempts) {
+    setConnectionAttempts(prev => prev + 1);
+    const retryDelay = Math.min(2000 * Math.pow(2, connectionAttempts), 10000); // 2s, 4s, 8s, max 10s
+    console.log(`Retrying loadOnlyOfficeAPI (attempt ${connectionAttempts}/${maxConnectionAttempts}) after ${retryDelay}ms...`);
+    setTimeout(() => loadOnlyOfficeAPI(), retryDelay);
+  } else {
+    console.error('Max retry attempts reached');
+    setError('Unable to load editor after multiple attempts.');
+    setFallbackMode(true);
+    setLoading(false);
+  }
+};
+
 
 
   const initializeEditor = async () => {
