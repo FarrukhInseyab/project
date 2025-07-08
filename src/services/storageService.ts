@@ -173,13 +173,13 @@ export class StorageService {
   }
 
   // Get signed URL for file access
-  static async getSignedUrl(filePath: string, bucketName: string): Promise<string> {
+  static async getSignedUrl(filePath: string, bucketName: string, p0: { expiresIn: number; }): Promise<string> {
     try {
-      const expiresInSeconds = 60; // 1 minute expiration
+      //const expiresInSeconds = 60; // 1 minute expiration
       
       const { data, error } = await supabase.storage
         .from(bucketName)
-        .createSignedUrl(filePath, expiresInSeconds);
+        .createSignedUrl(filePath, p0.expiresIn);
 
       if (error) {
         console.error('Signed URL creation error:', error);

@@ -194,7 +194,7 @@ export class OnlyOfficeService {
         throw new Error('Template file not found in storage');
       }
 
-      const signedUrl = await StorageService.getSignedUrl(template.storage_path, 'document-templates');
+      const signedUrl = await StorageService.getSignedUrl(template.storage_path, 'document-templates', { expiresIn: 3600 * 24 });
       console.log('🔗 Signed URL:', signedUrl);
 
       return signedUrl;
