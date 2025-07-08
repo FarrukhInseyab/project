@@ -219,7 +219,7 @@ const retryLoadWithBackoff = () => {
         width: '100%',
         height: '600px',
         documentType: 'word',
-        documentServerUrl: 'http://10.10.111.207:8080/onlyoffice',
+        documentServerUrl: 'http://onlyoffice',
         document: {
           fileType: 'docx',
           key: key,
@@ -287,7 +287,7 @@ const retryLoadWithBackoff = () => {
       width: '100%',
       height: '600px',
       documentType: 'word',
-      documentServerUrl: 'http://10.10.111.207:8080/onlyoffice',
+      documentServerUrl: 'http://onlyoffice',
       document: {
         fileType: 'docx',
         key: documentKey,
