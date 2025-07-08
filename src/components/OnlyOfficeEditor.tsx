@@ -219,6 +219,7 @@ const retryLoadWithBackoff = () => {
         width: '100%',
         height: '600px',
         documentType: 'word',
+        documentServerUrl: 'http://172.22.25.154:8082',
         document: {
           fileType: 'docx',
           key: key,
@@ -286,6 +287,7 @@ const retryLoadWithBackoff = () => {
       width: '100%',
       height: '600px',
       documentType: 'word',
+      documentServerUrl: 'http://172.22.25.154:8082',
       document: {
         fileType: 'docx',
         key: documentKey,
