@@ -3,7 +3,7 @@ import { StorageService } from './storageService';
 import { TemplateVersionService } from './templateVersionService';
 
 export class OnlyOfficeService {
-  static SERVER_URL = 'http://172.22.25.154:8082'; // Default URL
+  static SERVER_URL = 'http://10.10.111.207:8080/onlyoffice'; // Default URL
 
   // Set the server URL
   static setServerUrl(url: string) {
