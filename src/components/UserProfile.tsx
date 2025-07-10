@@ -642,7 +642,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
                       <li>Document structure with headings</li>
                       <li>Export to DOCX format</li>
                     </ul>
-                    </p>
                   </div>
                 </div>
               </div>
