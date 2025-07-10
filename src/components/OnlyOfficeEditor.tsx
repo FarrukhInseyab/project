@@ -79,60 +79,57 @@ export const OnlyOfficeEditor: React.FC<OnlyOfficeEditorProps> = ({
     setLoading(true);
     setError(null);
     setFallbackMode(false);
-
+ 
     const settings = await OnlyOfficeService.loadSettings();
     const currentServerUrl = settings.serverUrl;
     setServerUrl(currentServerUrl);
     console.log('Using OnlyOffice server URL:', currentServerUrl);
-
-    // If DocsAPI is already loaded, initialize
+ 
     if (window.DocsAPI) {
-      console.log('DocsAPI already loaded, initializing editor...');
+      console.log('DocsAPI already loaded, waiting for stability...');
+      await waitForDocsAPI(); // ✅ Wait for DocsAPI
       await initializeEditor();
       return;
     }
-
-    // Check if script already exists
+ 
     const existingScript = document.querySelector(`script[src="${currentServerUrl}/web-apps/apps/api/documents/api.js"]`);
     if (!existingScript) {
       console.log('Injecting API script...');
       const script = document.createElement('script');
       script.src = `${currentServerUrl}/web-apps/apps/api/documents/api.js`;
       script.async = true;
-
-      // Set timeout for script loading
+ 
       const scriptLoadTimeout = setTimeout(() => {
         console.error('API script load timed out');
-        setError('My Editor API script load timed out. Retrying...');
+        setError('Editor API script load timed out. Retrying...');
         retryLoadWithBackoff();
-      }, 8000); // 8 seconds max
-
+      }, 8000);
+ 
       script.onload = async () => {
         clearTimeout(scriptLoadTimeout);
         console.log('API script loaded successfully');
+        await waitForDocsAPI(); // ✅ Ensure DocsAPI is available
         await initializeEditor();
       };
-
+ 
       script.onerror = () => {
         clearTimeout(scriptLoadTimeout);
         console.error('Failed to load API script');
-        setError('My Editor server is not accessible. Using fallback editor.');
+        setError('Editor server is not accessible. Using fallback editor.');
         setFallbackMode(true);
         setLoading(false);
       };
-
+ 
       document.head.appendChild(script);
     } else {
-      console.log('API script already injected, waiting...');
-      // Retry initialization after short delay
-      setTimeout(() => {
-        if (window.DocsAPI) {
-          initializeEditor();
-        } else {
-          console.warn('DocsAPI still not ready, retrying...');
-          retryLoadWithBackoff();
-        }
-      }, 2000);
+      console.log('API script already injected, polling for DocsAPI...');
+      try {
+        await waitForDocsAPI(); // ✅ Wait for DocsAPI if script already injected
+        await initializeEditor();
+      } catch (err) {
+        console.warn('DocsAPI still not available, retrying...');
+        retryLoadWithBackoff();
+      }
     }
   } catch (error) {
     console.error('Error loading API script:', error);
@@ -145,10 +142,19 @@ export const OnlyOfficeEditor: React.FC<OnlyOfficeEditorProps> = ({
 // Retry with exponential backoff
 const retryLoadWithBackoff = () => {
   if (connectionAttempts < maxConnectionAttempts) {
-    setConnectionAttempts(prev => prev + 1);
-    const retryDelay = Math.min(2000 * Math.pow(2, connectionAttempts), 10000); // 2s, 4s, 8s, max 10s
-    console.log(`Retrying loadOnlyOfficeAPI (attempt ${connectionAttempts}/${maxConnectionAttempts}) after ${retryDelay}ms...`);
-    setTimeout(() => loadOnlyOfficeAPI(), retryDelay);
+    const nextAttempt = connectionAttempts + 1;
+    setConnectionAttempts(nextAttempt);
+    const retryDelay = Math.min(2000 * Math.pow(2, nextAttempt - 1), 10000);
+    
+    console.log(`Retrying loadOnlyOfficeAPI (attempt ${nextAttempt}/${maxConnectionAttempts}) after ${retryDelay}ms...`);
+
+    setTimeout(() => {
+      if (!window.DocsAPI) {
+        loadOnlyOfficeAPI();
+      } else {
+        initializeEditor(); // ✅ If already available, directly initialize
+      }
+    }, retryDelay);
   } else {
     console.error('Max retry attempts reached');
     setError('Unable to load editor after multiple attempts.');
@@ -156,6 +162,7 @@ const retryLoadWithBackoff = () => {
     setLoading(false);
   }
 };
+
 
 
 
@@ -713,6 +720,23 @@ const tryDownloadForTagManagement = () => {
       setSaving(false);
     }
   };
+
+  const waitForDocsAPI = async (maxWait = 15000, interval = 1000) => {
+  return new Promise<void>((resolve, reject) => {
+    const start = Date.now();
+    const check = () => {
+      if (window.DocsAPI) {
+        resolve();
+      } else if (Date.now() - start >= maxWait) {
+        reject(new Error('DocsAPI not loaded within timeout'));
+      } else {
+        setTimeout(check, interval);
+      }
+    };
+    check();
+  });
+};
+
 
   if (!isOpen) return null;
 
