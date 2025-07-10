@@ -163,7 +163,12 @@ const handleManageTags = async () => {
       setError(`Failed to process document: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setSaving(false);
     }
-  };
+  } catch (error) {
+    console.error('Error in handleManageTags:', error);
+    setError(`Failed to manage tags: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    setSaving(false);
+  }
+};
 
   const handleSaveDocument = async () => {
     if (fallbackMode) {
@@ -563,8 +568,8 @@ const handleManageTags = async () => {
                   )}
                 </button>
               )}
-              {/* {mode === 'view' && (
-                <button
+            </div>
+          </div>
         </div>
       </div>
     </div>
