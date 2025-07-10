@@ -45,7 +45,6 @@ import {
 } from 'lucide-react';
 import { supabase, testSupabaseConnection } from '../lib/supabase';
 import { AuthService } from '../services/authService';
-import { DocumentPreview } from './DocumentPreview';
 
 export const MainApp: React.FC = () => {
   const { 
