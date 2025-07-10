@@ -17,7 +17,6 @@ import { CloudConvertSettings } from './CloudConvertSettings';
 import { TemplateUpdateModal } from './TemplateUpdateModal';
 import { DataMappingService } from '../services/dataMappingService';
 import { v4 as uuidv4 } from 'uuid';
-import { DocumentPreview } from './DocumentPreview';
 import { 
   User, 
   LogOut, 
@@ -244,16 +243,13 @@ export const MainApp: React.FC = () => {
 
   const handlePreviewTemplate = async (template: any) => {
     try {
-      setLoading(true);
       // Load the template
       await loadTemplate(template);
       
       // Switch to preview view
       setView('preview');
-      setLoading(false);
     } catch (error) {
       console.error('Failed to preview template:', error);
-      setLoading(false);
     }
   };
 
@@ -483,11 +479,11 @@ export const MainApp: React.FC = () => {
       case 'preview':
         return (
           <DocumentViewer
-            templateId={state.selectedTemplate?.id || ''}
-            templateName={state.selectedTemplate?.name || 'Document Preview'}
-            documentHtml={state.documentHtml || ''}
-            tags={state.tags || []}
-            onClose={() => setView('templates')}
+            templateId={state.selectedTemplate?.id}
+            templateName={state.selectedTemplate?.name}
+            documentHtml={state.documentHtml}
+            tags={state.tags}
+            onClose={() => setView('dashboard')}
           />
         );
       default:

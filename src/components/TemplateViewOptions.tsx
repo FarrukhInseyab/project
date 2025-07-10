@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Edit, X, Eye, ChevronRight } from 'lucide-react';
+import { Download, Edit, X, Eye } from 'lucide-react';
 
 interface TemplateViewOptionsProps {
   isOpen: boolean;
@@ -70,7 +70,6 @@ export const TemplateViewOptions: React.FC<TemplateViewOptionsProps> = ({
                   <div className="font-semibold text-green-900">Preview Document</div>
                   <div className="text-sm text-green-600">View document with tag highlighting</div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-green-600 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </button>
 
