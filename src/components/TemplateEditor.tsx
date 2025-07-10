@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { OnlyOfficeEditor } from './OnlyOfficeEditor';
+import { DocumentEditor } from './OnlyOfficeEditor';
 import { FileText, Edit, Upload, Plus, AlertTriangle, Settings, ExternalLink } from 'lucide-react';
 import { DocumentTemplate } from '../types';
-import { OnlyOfficeService } from '../services/onlyOfficeService';
+import { EditorService } from '../services/onlyOfficeService';
 
 interface TemplateEditorProps {
   template?: DocumentTemplate;
@@ -28,21 +28,19 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       setChecking(true);
       setServerError(null);
       
-      // Load current settings first
-      await OnlyOfficeService.loadSettings();
-      
-      const available = await OnlyOfficeService.checkServerAvailability();
+      // CKEditor is a client-side library, so it's always available
+      const available = await EditorService.checkEditorAvailability();
       setServerAvailable(available);
       
       if (!available) {
-        setServerError(`Cannot connect to My Editor server at ${OnlyOfficeService.getServerUrl()}. Please check your server configuration in settings.`);
+        setServerError('Document editor is not available. Please check your browser compatibility.');
       }
       
       return available;
     } catch (error) {
-      console.error('Error checking My Editor server:', error);
+      console.error('Error checking document editor:', error);
       setServerAvailable(false);
-      setServerError(`Failed to check My Editor server: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setServerError(`Failed to check document editor: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     } finally {
       setChecking(false);
@@ -100,7 +98,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">{template.name}</h3>
-                  <p className="text-sm text-gray-600">Edit this template with My Editor</p>
+                  <p className="text-sm text-gray-600">Create a new template with the document editor</p>
                 </div>
               </div>
               <button
@@ -127,9 +125,9 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                 <div className="flex items-start space-x-3">
                   <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-yellow-800 mb-1">My Editor Server Unavailable</h4>
+                    <h4 className="text-sm font-medium text-yellow-800 mb-1">Document Editor Unavailable</h4>
                     <p className="text-sm text-yellow-700 mb-3">
-                      {serverError || `Cannot connect to My Editor server at ${OnlyOfficeService.getServerUrl()}`}
+                      {serverError || 'Document editor is not available'}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -222,17 +220,17 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
             <div className="flex items-start space-x-3">
               <ExternalLink className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-sm font-semibold text-blue-900 mb-2">My Editor Server Setup</h4>
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">Document Editor Information</h4>
                 <p className="text-sm text-blue-800 mb-3">
-                  To use My Editor document editing, you need a running My Editor Document Server. 
-                  The current configured URL is: <code className="bg-blue-100 px-1 py-0.5 rounded text-xs">{OnlyOfficeService.getServerUrl()}</code>
+                  This application uses CKEditor for document editing. No external server is required.
                 </p>
                 <div className="text-sm text-blue-800">
-                  <p className="mb-2"><strong>Quick Setup Options:</strong></p>
+                  <p className="mb-2"><strong>Features:</strong></p>
                   <ul className="list-disc list-inside space-y-1 ml-4">
-                    <li>Install My Editor Document Server locally</li>
-                    <li>Use a cloud-hosted My Editor instance</li>
-                    <li>Update the server URL in your profile settings</li>
+                    <li>Rich text editing with formatting options</li>
+                    <li>Table support</li>
+                    <li>Document structure with headings</li>
+                    <li>Export to DOCX format</li>
                   </ul>
                 </div>
               </div>
@@ -243,7 +241,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
       {/* OnlyOffice Editor Modal */}
       {isEditorOpen && (
-        <OnlyOfficeEditor
+        <DocumentEditor
           isOpen={isEditorOpen}
           onClose={() => setIsEditorOpen(false)}
           templateId={template?.id}

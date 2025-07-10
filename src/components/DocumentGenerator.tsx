@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, FileText, CheckCircle, AlertCircle, Zap, Package, RefreshCw, Sparkles, Settings } from 'lucide-react';
 import { generateDocxFromContent } from '../utils/documentUtils';
 import { CloudConvertService } from '../services/cloudConvertService';
-import { OnlyOfficeService } from '../services/onlyOfficeService';
+import { EditorService } from '../services/onlyOfficeService';
 import { CloudConvertSettings } from './CloudConvertSettings';
 import { Tag, Mapping, IncomingData, DocumentTemplate } from '../types';
 import { GenerationService } from '../services/generationService';
@@ -65,10 +65,9 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
   const checkOnlyOfficeConfiguration = async () => {
     try {
       setLoading(true);
-      const isAvailable = await OnlyOfficeService.checkServerAvailability();
-      setOnlyOfficeConfigured(isAvailable);
+      setOnlyOfficeConfigured(false); // We're not using OnlyOffice anymore
     } catch (error) {
-      console.error('Failed to check My Editor configuration:', error);
+      console.error('Failed to check editor configuration:', error);
       setOnlyOfficeConfigured(false);
     } finally {
       setLoading(false);
@@ -78,7 +77,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
   const loadPdfConversionMethod = async () => {
     try {
       setLoading(true);
-      const settings = await OnlyOfficeService.loadSettings();
+      const settings = await EditorService.loadSettings();
       console.log('Loaded PDF conversion method:', settings.pdfConversionMethod);
       setPdfConversionMethod(settings.pdfConversionMethod as 'cloudconvert' | 'onlyoffice');
     } catch (error) {
@@ -405,7 +404,9 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
           if (pdfConversionMethod === 'onlyoffice' && onlyOfficeConfigured) {
             try {
               console.log('Using My Editor for PDF conversion');
-              pdfBlob = await OnlyOfficeService.convertDocxToPdf(doc.blob, doc.filename);
+              // Fallback to CloudConvert since we removed OnlyOffice
+              console.log('My Editor not available, falling back to CloudConvert');
+              pdfBlob = await CloudConvertService.convertDocxToPdf(doc.blob, doc.filename);
             } catch (onlyOfficeError) {
               console.error('❌ My Editor PDF conversion failed, falling back to OnlineConverter:', onlyOfficeError);
               setStatusMessage(prev => prev + '\n⚠️ My Editor conversion failed, falling back to OnlineConverter...');
@@ -747,7 +748,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
                     <span className="text-sm font-medium text-orange-800">My Editor Setup Required</span>
                   </div>
                   <p className="text-sm text-orange-700">
-                    Configure your My Editor server URL to enable PDF generation using My Editor.
+                    My Editor is not available. Please use OnlineConverter for PDF generation.
                   </p>
                 </div>
               )}
@@ -763,7 +764,7 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Sparkles className="w-4 h-4 text-red-500 mr-3 flex-shrink-0" />
-                  <span>Professional PDF output via {pdfConversionMethod === 'cloudconvert' ? 'OnlineConverter' : 'My Editor'}</span>
+                  <span>Professional PDF output via OnlineConverter</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Download className="w-4 h-4 text-purple-500 mr-3 flex-shrink-0" />
