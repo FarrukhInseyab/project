@@ -6,6 +6,7 @@ import { TagManager } from './TagManager';
 import { TagColumnMapper } from './TagColumnMapper';
 import { DataImporter } from './DataImporter';
 import { DocumentGenerator } from './DocumentGenerator';
+import { DocumentViewer } from './DocumentViewer';
 import { TemplateManager } from './TemplateManager';
 import { SaveTemplateScreen } from './SaveTemplateScreen';
 import { Dashboard } from './Dashboard';
@@ -43,6 +44,7 @@ import {
 } from 'lucide-react';
 import { supabase, testSupabaseConnection } from '../lib/supabase';
 import { AuthService } from '../services/authService';
+import { DocumentPreview } from './DocumentPreview';
 
 export const MainApp: React.FC = () => {
   const { 
@@ -69,7 +71,7 @@ export const MainApp: React.FC = () => {
     clearMessages
   } = useAppState();
 
-  const [view, setView] = useState<'dashboard' | 'templates' | 'editor' | 'generated'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'templates' | 'editor' | 'generated' | 'preview'>('dashboard');
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showCloudConvertSettings, setShowCloudConvertSettings] = useState(false);
   const [showTemplateUpdateModal, setShowTemplateUpdateModal] = useState(false);
@@ -239,6 +241,18 @@ export const MainApp: React.FC = () => {
     }
   };
 
+  const handlePreviewTemplate = async (template: any) => {
+    try {
+      // Load the template
+      await loadTemplate(template);
+      
+      // Switch to preview view
+      setView('preview');
+    } catch (error) {
+      console.error('Failed to preview template:', error);
+    }
+  };
+
   const handleUseExistingMappings = async () => {
     try {
       if (!state.selectedTemplate) return;
@@ -393,6 +407,7 @@ export const MainApp: React.FC = () => {
             onTemplateVersionUpdate={refreshCurrentTemplate}
             onOpenSettings={() => setShowCloudConvertSettings(true)}
           />
+            onPreviewTemplate={handlePreviewTemplate}
         );
       case 'editor':
         return (
@@ -458,7 +473,19 @@ export const MainApp: React.FC = () => {
           </>
         );
       case 'generated':
-        return <GeneratedDocuments onClose={() => setView('dashboard')} />;
+        return (
+          <GeneratedDocuments onClose={() => setView('dashboard')} />
+        );
+      case 'preview':
+        return (
+          <DocumentViewer
+            templateId={state.selectedTemplate?.id}
+            templateName={state.selectedTemplate?.name}
+            documentHtml={state.documentHtml}
+            tags={state.tags}
+            onClose={() => setView('dashboard')}
+          />
+        );
       default:
         return <Dashboard templates={state.templates} onTemplateSelect={handleTemplateSelect} onTemplateDelete={removeTemplate} onNewTemplate={() => setView('editor')} />;
     }
