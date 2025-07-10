@@ -41,21 +41,16 @@ export const CloudConvertSettings: React.FC<CloudConvertSettingsProps> = ({ onCl
   const loadSettings = async () => {
     try {
       setLoading(true);
-
+      
       // Load OnlyOffice settings
       const settings = await OnlyOfficeService.loadSettings();
       setOnlyOfficeUrl(settings.serverUrl);
       setPdfConversionMethod(settings.pdfConversionMethod as 'cloudconvert' | 'onlyoffice');
-
+      
       // Check server status
-      try {
-        const isAvailable = await OnlyOfficeService.checkServerAvailability(settings.serverUrl);
-        setServerStatus(isAvailable ? 'available' : 'unavailable');
-      } catch (statusError) {
-        console.error('Failed to check server status:', statusError);
-        setServerStatus('unavailable');
-      }
-
+      const isAvailable = await OnlyOfficeService.checkServerAvailability(settings.serverUrl);
+      setServerStatus(isAvailable ? 'available' : 'unavailable');
+      
     } catch (error) {
       console.error('Failed to load settings:', error);
       setServerStatus('unavailable');
@@ -154,21 +149,15 @@ export const CloudConvertSettings: React.FC<CloudConvertSettingsProps> = ({ onCl
   const testOnlyOfficeConnection = async () => {
     try {
       setTestingOnlyOffice(true);
-      setMessage(null); 
-
-      try {
-        const isAvailable = await OnlyOfficeService.checkServerAvailability(onlyOfficeUrl.trim());
-        setServerStatus(isAvailable ? 'available' : 'unavailable');
-        
-        if (isAvailable) {
-          setMessage({ type: 'success', text: 'My Editor server is available and responding' });
-        } else {
-          setMessage({ type: 'error', text: 'My Editor server is not responding. Please check the URL and server status.' });
-        }
-      } catch (connectionError) {
-        console.error('Connection test error:', connectionError);
-        setServerStatus('unavailable');
-        setMessage({ type: 'error', text: 'Failed to connect to My Editor server. Please check the URL format and server availability.' });
+      setMessage(null);
+      
+      const isAvailable = await OnlyOfficeService.checkServerAvailability(onlyOfficeUrl.trim());
+      setServerStatus(isAvailable ? 'available' : 'unavailable');
+      
+      if (isAvailable) {
+        setMessage({ type: 'success', text: 'My Editor server is available and responding' });
+      } else {
+        setMessage({ type: 'error', text: 'My Editor server is not responding. Please check the URL and server status.' });
       }
     } catch (error) {
       console.error('Failed to test My Editor connection:', error);

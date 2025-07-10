@@ -3,7 +3,7 @@ import { StorageService } from './storageService';
 import { TemplateVersionService } from './templateVersionService';
 
 export class OnlyOfficeService {
-  static SERVER_URL = 'https://document-server.example.com'; // Default URL
+  static SERVER_URL = 'http://172.22.25.154:8082'; // Default URL
 
   // Set the server URL
   static setServerUrl(url: string) {
@@ -19,10 +19,10 @@ export class OnlyOfficeService {
   // Check if OnlyOffice server is available
   static async checkServerAvailability(customUrl?: string): Promise<boolean> {
     const url = customUrl || this.SERVER_URL;
-
+    
     try {
       console.log(`Testing My Editor server availability at ${url}...`);
-
+      
       // First, check if the URL is valid
       try {
         new URL(url);
@@ -30,30 +30,35 @@ export class OnlyOfficeService {
         console.warn('Invalid My Editor server URL:', url);
         return false;
       }
-
+      
       // Try a simple fetch with a timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
+      
       try {
         console.log('Attempting to connect to My Editor server...');
         const response = await fetch(`${url}/healthcheck`, {
           method: 'GET',
           signal: controller.signal,
-          mode: 'no-cors', // Use no-cors mode to avoid CORS issues
+          mode: 'cors',
           cache: 'no-cache',
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           }
         });
-
+        
         clearTimeout(timeoutId);
-
-        // When using no-cors, we can't check response.ok
-        // Just assume it's available if we got a response
-        console.log('My Editor server appears to be available');
-        return true;
+        
+        // Check if response is ok (status 200-299)
+        if (response.ok) {
+          console.log('My Editor server is available');
+          return true;
+        } else {
+          console.log(`My Editor server responded with status: ${response.status}`);
+          // Even if healthcheck fails, try the main endpoint
+          return await this.tryMainEndpoint(url);
+        }
       } catch (fetchError) {
         clearTimeout(timeoutId);
         console.log('Healthcheck endpoint failed, trying main endpoint...', fetchError);
