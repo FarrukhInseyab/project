@@ -406,8 +406,8 @@ export const MainApp: React.FC = () => {
             onSaveTemplate={handleSaveTemplate}
             onTemplateVersionUpdate={refreshCurrentTemplate}
             onOpenSettings={() => setShowCloudConvertSettings(true)}
-          />
             onPreviewTemplate={handlePreviewTemplate}
+          />
         );
       case 'editor':
         return (
