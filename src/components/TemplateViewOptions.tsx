@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Edit, X, Eye } from 'lucide-react';
+import { Download, Edit, X, Eye, ChevronRight } from 'lucide-react';
 
 interface TemplateViewOptionsProps {
   isOpen: boolean;

@@ -3,7 +3,7 @@ import { DocumentPreview } from './DocumentPreview';
 import { TemplateVersionService } from '../services/templateVersionService';
 import { StorageService } from '../services/storageService';
 import { convertDocxToHtml } from '../utils/documentUtils';
-import { FileText, Download, RefreshCw, AlertCircle, Tag, List, Eye } from 'lucide-react';
+import { FileText, Download, RefreshCw, AlertCircle, Tag, List, Eye, X, ArrowLeft } from 'lucide-react';
 
 interface DocumentViewerProps {
   templateId?: string;
@@ -23,7 +23,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [html, setHtml] = useState(documentHtml);
-  const [showTags, setShowTags] = useState(false);
+  const [showTags, setShowTags] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
@@ -164,6 +164,16 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
               <span>Download</span>
             </button>
           )}
+          
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-1"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </button>
+          )}
         </div>
       </div>
       
@@ -209,4 +219,4 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
       />
     </div>
   );
-};
+}
