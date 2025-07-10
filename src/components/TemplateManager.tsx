@@ -42,7 +42,6 @@ interface TemplateManagerProps {
   onTemplateVersionUpdate?: () => void;
   onOpenSettings?: () => void;
   onViewTemplate?: (template: DocumentTemplate) => void;
-  onPreviewTemplate?: (template: DocumentTemplate) => void;
   onEditTemplate?: (template: DocumentTemplate) => void;
 }
 
@@ -57,7 +56,6 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
   onTemplateVersionUpdate,
   onOpenSettings,
   onViewTemplate,
-  onPreviewTemplate,
   onEditTemplate,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -259,15 +257,6 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
   const handleViewTemplate = (template: DocumentTemplate) => {
     if (onViewTemplate) {
       onViewTemplate(template);
-    } else {
-      setSelectedTemplateForOptions(template);
-      setShowViewOptions(true);
-    }
-  };
-
-  const handlePreviewTemplate = (template: DocumentTemplate) => {
-    if (onPreviewTemplate) {
-      onPreviewTemplate(template);
     } else {
       setSelectedTemplateForOptions(template);
       setShowViewOptions(true);
@@ -490,12 +479,6 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
             handleDownloadTemplate(selectedTemplateForOptions);
             setShowViewOptions(false);
           }}
-          onPreview={() => {
-            if (onPreviewTemplate) {
-              onPreviewTemplate(selectedTemplateForOptions);
-            }
-            setShowViewOptions(false);
-          }}
           onOpenInEditor={() => {
             // Instead of opening the editor directly, select the template to go to document editor
             onTemplateSelect(selectedTemplateForOptions);
@@ -552,7 +535,6 @@ interface TemplateCardProps {
   onShowVersionHistory: () => void;
   onShowNewVersion: () => void;
   onDownload: () => void;
-  onPreview: () => void;
   onViewOptions: () => void;
   onEditOptions: () => void;
   formatDate: (date: Date | string) => string;
@@ -567,7 +549,6 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
   onShowVersionHistory,
   onShowNewVersion,
   onDownload,
-  onPreview,
   onViewOptions,
   onEditOptions,
   formatDate,
@@ -795,19 +776,6 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
             </button>
             
             <button
-              onClick={onPreview}
-              className="flex items-center justify-center px-3 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg text-xs font-medium hover:from-green-700 hover:to-teal-700 transition-all duration-200"
-              title="Preview Document"
-            >
-              <Eye className="w-3 h-3 mr-1" />
-              Preview
-            </button>
-          </div>
-
-          {/* Secondary Actions */}
-          <div className="grid grid-cols-2 gap-2">
-            
-            <button
               onClick={onEditOptions}
               className="flex items-center justify-center px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg text-xs font-medium hover:from-blue-700 hover:to-cyan-700 transition-all duration-200"
               title="Edit Template"
@@ -815,7 +783,10 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
               <Edit className="w-3 h-3 mr-1" />
               Edit
             </button>
-            
+          </div>
+
+          {/* Secondary Actions */}
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={onSelect}
               className="flex items-center justify-center px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-xs font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200"
@@ -824,7 +795,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
               <FileText className="w-3 h-3 mr-1" />
               Use
             </button>
-
+            
             <button
               onClick={onShowVersionHistory}
               className="flex items-center justify-center px-3 py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg text-xs font-medium hover:from-orange-700 hover:to-red-700 transition-all duration-200"

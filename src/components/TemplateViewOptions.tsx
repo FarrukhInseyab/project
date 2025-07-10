@@ -1,12 +1,11 @@
 import React from 'react';
-import { Download, Edit, X, Eye } from 'lucide-react';
+import { Download, Edit, X } from 'lucide-react';
 
 interface TemplateViewOptionsProps {
   isOpen: boolean;
   onClose: () => void;
   onDownload: () => void;
   onOpenInEditor: () => void;
-  onPreview: () => void;
   templateName: string;
 }
 
@@ -15,7 +14,6 @@ export const TemplateViewOptions: React.FC<TemplateViewOptionsProps> = ({
   onClose,
   onDownload,
   onOpenInEditor,
-  onPreview,
   templateName,
 }) => {
   if (!isOpen) return null;
@@ -54,21 +52,6 @@ export const TemplateViewOptions: React.FC<TemplateViewOptionsProps> = ({
                 <div className="text-left">
                   <div className="font-semibold text-gray-900">Download Template</div>
                   <div className="text-sm text-gray-600">Save the DOCX file to your device</div>
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={onPreview}
-              className="w-full flex items-center justify-between p-4 border border-green-300 rounded-xl hover:bg-green-50 transition-all duration-200 group"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Eye className="w-5 h-5 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-green-900">Preview Document</div>
-                  <div className="text-sm text-green-600">View document with tag highlighting</div>
                 </div>
               </div>
             </button>

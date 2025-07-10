@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CloudConvertService } from '../services/cloudConvertService';
-import { EditorService } from '../services/onlyOfficeService';
+import { OnlyOfficeService } from '../services/onlyOfficeService';
 import { Key, Save, Trash2, Eye, EyeOff, ExternalLink, CheckCircle, AlertCircle, Server, FileType, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -17,6 +17,8 @@ export const CloudConvertSettings: React.FC<CloudConvertSettingsProps> = ({ onCl
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [pdfConversionMethod, setPdfConversionMethod] = useState<'cloudconvert' | 'onlyoffice'>('cloudconvert');
   const [onlyOfficeUrl, setOnlyOfficeUrl] = useState('');
+  const [testingOnlyOffice, setTestingOnlyOffice] = useState(false);
+  const [serverStatus, setServerStatus] = useState<'unknown' | 'available' | 'unavailable'>('unknown');
 
   useEffect(() => {
     checkConfiguration();
@@ -41,11 +43,17 @@ export const CloudConvertSettings: React.FC<CloudConvertSettingsProps> = ({ onCl
       setLoading(true);
       
       // Load OnlyOffice settings
-      const settings = await EditorService.loadSettings();
+      const settings = await OnlyOfficeService.loadSettings();
+      setOnlyOfficeUrl(settings.serverUrl);
       setPdfConversionMethod(settings.pdfConversionMethod as 'cloudconvert' | 'onlyoffice');
+      
+      // Check server status
+      const isAvailable = await OnlyOfficeService.checkServerAvailability(settings.serverUrl);
+      setServerStatus(isAvailable ? 'available' : 'unavailable');
       
     } catch (error) {
       console.error('Failed to load settings:', error);
+      setServerStatus('unavailable');
     } finally {
       setLoading(false);
     }
@@ -110,6 +118,7 @@ export const CloudConvertSettings: React.FC<CloudConvertSettingsProps> = ({ onCl
 
       const updatedPreferences = {
         ...profile?.preferences,
+        onlyoffice_url: onlyOfficeUrl.trim(),
         pdf_conversion_method: pdfConversionMethod
       };
 
@@ -121,15 +130,41 @@ export const CloudConvertSettings: React.FC<CloudConvertSettingsProps> = ({ onCl
       if (error) throw error;
       
       // Update OnlyOffice service with new URL
-      EditorService.setPdfConversionMethod(pdfConversionMethod);
+      OnlyOfficeService.setServerUrl(onlyOfficeUrl.trim());
       
       setMessage({ type: 'success', text: 'Settings saved successfully!' });
+      
+      // Check server status after saving
+      const isAvailable = await OnlyOfficeService.checkServerAvailability(onlyOfficeUrl.trim());
+      setServerStatus(isAvailable ? 'available' : 'unavailable');
       
     } catch (error) {
       console.error('Failed to save settings:', error);
       setMessage({ type: 'error', text: 'Failed to save settings. Please try again.' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const testOnlyOfficeConnection = async () => {
+    try {
+      setTestingOnlyOffice(true);
+      setMessage(null);
+      
+      const isAvailable = await OnlyOfficeService.checkServerAvailability(onlyOfficeUrl.trim());
+      setServerStatus(isAvailable ? 'available' : 'unavailable');
+      
+      if (isAvailable) {
+        setMessage({ type: 'success', text: 'My Editor server is available and responding' });
+      } else {
+        setMessage({ type: 'error', text: 'My Editor server is not responding. Please check the URL and server status.' });
+      }
+    } catch (error) {
+      console.error('Failed to test My Editor connection:', error);
+      setMessage({ type: 'error', text: 'Failed to connect to My Editor server' });
+      setServerStatus('unavailable');
+    } finally {
+      setTestingOnlyOffice(false);
     }
   };
 
@@ -144,8 +179,8 @@ export const CloudConvertSettings: React.FC<CloudConvertSettingsProps> = ({ onCl
                 <Key className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900">PDF Conversion Settings</h2>
-                <p className="text-sm text-gray-600">Configure PDF generation options</p>
+                <h2 className="text-xl font-bold text-gray-900">Document Settings</h2>
+                <p className="text-sm text-gray-600">Configure PDF generation and document editing</p>
               </div>
             </div>
             <button
@@ -183,6 +218,20 @@ export const CloudConvertSettings: React.FC<CloudConvertSettingsProps> = ({ onCl
                   OnlineConverter
                 </label>
               </div>
+              <div className="flex items-center">
+                <input
+                  type="radio"
+                  id="onlyoffice"
+                  name="pdfConversionMethod"
+                  value="onlyoffice"
+                  checked={pdfConversionMethod === 'onlyoffice'}
+                  onChange={() => setPdfConversionMethod('onlyoffice')}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                />
+                <label htmlFor="onlyoffice" className="ml-2 block text-sm text-gray-900">
+                  My Editor
+                </label>
+              </div>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
@@ -192,7 +241,87 @@ export const CloudConvertSettings: React.FC<CloudConvertSettingsProps> = ({ onCl
               </div>
               <p className="text-sm text-blue-800">
                 <strong>OnlineConverter:</strong> Uses the OnlineConverter API (requires API key).<br />
+                <strong>My Editor:</strong> Uses your My Editor server for conversion (requires server configuration).
               </p>
+            </div>
+          </div>
+
+          {/* OnlyOffice Settings */}
+          <div className="space-y-4 border-t border-gray-200 pt-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                <Server className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">My Editor Server</h3>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                My Editor Server URL
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={onlyOfficeUrl}
+                  onChange={(e) => setOnlyOfficeUrl(e.target.value)}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  placeholder="http://your-editor-server:8082"
+                />
+                <button
+                  onClick={testOnlyOfficeConnection}
+                  disabled={testingOnlyOffice || !onlyOfficeUrl.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 flex items-center"
+                >
+                  {testingOnlyOffice ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                  )}
+                  Test
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Enter the URL of your My Editor Document Server
+              </p>
+              
+              {/* Server Status */}
+              <div className={`mt-2 flex items-center ${
+                serverStatus === 'available' ? 'text-green-600' : 
+                serverStatus === 'unavailable' ? 'text-red-600' : 'text-gray-600'
+              }`}>
+                {serverStatus === 'available' ? (
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                ) : serverStatus === 'unavailable' ? (
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                )}
+                <span className="text-xs font-medium">
+                  {serverStatus === 'available' ? 'Server is available' : 
+                   serverStatus === 'unavailable' ? 'Server is not available' : 
+                   'Server status unknown'}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <ExternalLink className="w-4 h-4 text-blue-600" />
+                <h4 className="text-sm font-semibold text-blue-900">My Editor Integration</h4>
+              </div>
+              <p className="text-xs text-blue-800">
+                My Editor provides a full-featured document editor for creating and editing templates. 
+                Make sure your My Editor server is accessible from your browser.
+              </p>
+              <div className="mt-2 text-xs text-blue-800">
+                <p className="font-semibold">Common Issues:</p>
+                <ul className="list-disc list-inside mt-1">
+                  <li>Check that your server URL is correct and includes the protocol (http:// or https://)</li>
+                  <li>Ensure your server allows cross-origin requests (CORS)</li>
+                  <li>Verify that your server is running and accessible from your browser</li>
+                  <li>Try using a public OnlyOffice server if you don't have your own</li>
+                </ul>
+              </div>
             </div>
           </div>
 

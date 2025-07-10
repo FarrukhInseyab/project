@@ -66,7 +66,7 @@ export const TemplateEditOptions: React.FC<TemplateEditOptionsProps> = ({
                 </div>
                 <div className="text-left">
                   <div className="font-semibold text-blue-900">Edit in My Editor</div>
-                  <div className="text-sm text-blue-600">Open in the CKEditor document editor</div>
+                  <div className="text-sm text-blue-600">Open in the document editor</div>
                 </div>
               </div>
             </button>
