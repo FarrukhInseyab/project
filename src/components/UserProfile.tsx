@@ -34,7 +34,7 @@ import { ActivityService } from '../services/activityService';
 import { TemplateService } from '../services/templateService';
 import { GenerationService } from '../services/generationService';
 import { CloudConvertService } from '../services/cloudConvertService';
-import { OnlyOfficeService } from '../services/onlyOfficeService';
+import { EditorService } from '../services/onlyOfficeService';
 
 interface UserProfileProps {
   onClose: () => void;
@@ -54,7 +54,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
     company: '',
     role: ''
   });
-  const [onlyOfficeUrl, setOnlyOfficeUrl] = useState('');
   const [pdfConversionMethod, setPdfConversionMethod] = useState<'cloudconvert' | 'onlyoffice'>('cloudconvert');
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -76,9 +75,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
         role: profileData.role || ''
       });
 
-      // Load OnlyOffice URL and PDF conversion method from preferences
+      // Load PDF conversion method from preferences
       const preferences = profileData.preferences || {};
-      setOnlyOfficeUrl(preferences.onlyoffice_url || '');
       setPdfConversionMethod(preferences.pdf_conversion_method || 'cloudconvert');
 
       // Load statistics
@@ -124,10 +122,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
       setIsSavingSettings(true);
       setSettingsMessage(null);
       
-      // Update preferences with OnlyOffice URL and PDF conversion method
+      // Update preferences with PDF conversion method
       const updatedPreferences = {
         ...(profile?.preferences || {}),
-        onlyoffice_url: onlyOfficeUrl.trim(),
         pdf_conversion_method: pdfConversionMethod
       };
       
@@ -135,8 +132,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
         preferences: updatedPreferences
       });
       
-      // Update OnlyOffice service with new URL
-      OnlyOfficeService.setServerUrl(onlyOfficeUrl.trim());
+      // Update EditorService with new method
+      EditorService.setPdfConversionMethod(pdfConversionMethod);
       
       setSettingsMessage({
         type: 'success',
@@ -150,36 +147,6 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
       setSettingsMessage({
         type: 'error',
         text: 'Failed to save settings'
-      });
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
-
-  const testOnlyOfficeConnection = async () => {
-    try {
-      setIsSavingSettings(true);
-      setSettingsMessage(null);
-      
-      // Test connection to OnlyOffice server
-      const isAvailable = await OnlyOfficeService.checkServerAvailability(onlyOfficeUrl.trim());
-      
-      if (isAvailable) {
-        setSettingsMessage({
-          type: 'success',
-          text: 'My Editor server is available and responding'
-        });
-      } else {
-        setSettingsMessage({
-          type: 'error',
-          text: 'My Editor server is not responding. Please check the URL and server status.'
-        });
-      }
-    } catch (error) {
-      console.error('Failed to test My Editor connection:', error);
-      setSettingsMessage({
-        type: 'error',
-        text: 'Failed to connect to My Editor server'
       });
     } finally {
       setIsSavingSettings(false);
@@ -638,11 +605,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
               <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl border border-gray-200 p-6">
                 <div className="flex items-center space-x-3 mb-6">
                   <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                    <Server className="w-5 h-5 text-white" />
+                    <FileText className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">My Editor Settings</h3>
-                    <p className="text-sm text-gray-600">Configure My Editor integration for document editing</p>
+                    <h3 className="text-lg font-bold text-gray-900">Document Editor Settings</h3>
+                    <p className="text-sm text-gray-600">Configure document editing options</p>
                   </div>
                 </div>
 
@@ -657,39 +624,24 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
                 )}
 
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      My Editor Server URL
-                    </label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="text"
-                        value={onlyOfficeUrl}
-                        onChange={(e) => setOnlyOfficeUrl(e.target.value)}
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                        placeholder="http://your-editor-server:8082"
-                      />
-                      <button
-                        onClick={testOnlyOfficeConnection}
-                        disabled={isSavingSettings}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 disabled:opacity-50"
-                      >
-                        Test
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter the URL of your My Editor Document Server
-                    </p>
-                  </div>
-
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                     <div className="flex items-center space-x-2 mb-2">
                       <ExternalLink className="w-4 h-4 text-blue-600" />
-                      <h4 className="text-sm font-semibold text-blue-900">My Editor Integration</h4>
+                      <h4 className="text-sm font-semibold text-blue-900">Document Editor Information</h4>
                     </div>
                     <p className="text-xs text-blue-800">
-                      My Editor provides a full-featured document editor for creating and editing templates. 
-                      Make sure your My Editor server is accessible from your browser.
+                      This application uses CKEditor for document editing. CKEditor is a powerful WYSIWYG editor
+                      that allows you to create and edit rich text documents directly in your browser.
+                    </p>
+                    <p className="text-xs text-blue-800 mt-2">
+                      <strong>Features:</strong>
+                    </p>
+                    <ul className="text-xs text-blue-800 list-disc list-inside mt-1">
+                      <li>Rich text editing with formatting options</li>
+                      <li>Table support</li>
+                      <li>Document structure with headings</li>
+                      <li>Export to DOCX format</li>
+                    </ul>
                     </p>
                   </div>
                 </div>
@@ -726,15 +678,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
                     <div className="flex items-center">
                       <input
                         type="radio"
-                        id="onlyoffice"
+                        id="cloudconvert-alt"
                         name="pdfConversionMethod"
-                        value="onlyoffice"
-                        checked={pdfConversionMethod === 'onlyoffice'}
-                        onChange={() => setPdfConversionMethod('onlyoffice')}
+                        value="cloudconvert"
+                        checked={true}
+                        disabled={true}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                       />
-                      <label htmlFor="onlyoffice" className="ml-2 block text-sm text-gray-900">
-                        My Editor
+                      <label htmlFor="cloudconvert-alt" className="ml-2 block text-sm text-gray-400">
+                        CKEditor (Not Available)
                       </label>
                     </div>
                   </div>
@@ -745,8 +697,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
                       <h4 className="text-sm font-semibold text-orange-900">PDF Conversion Options</h4>
                     </div>
                     <p className="text-xs text-orange-800">
-                      <strong>OnlineConverter:</strong> Uses the OnlineConverter API (requires API key in settings).<br />
-                      <strong>My Editor:</strong> Uses your My Editor server for conversion (requires server configuration).
+                      <strong>OnlineConverter:</strong> Uses the OnlineConverter API (requires API key in settings).
                     </p>
                   </div>
                 </div>

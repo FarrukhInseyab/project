@@ -9,7 +9,7 @@ interface DocumentEditorProps {
   onFileUpload: (file: File, html: string) => void;
   tags: TagType[];
   onTagCreate: (tagName: string, selectedText: string) => void;
-  onOpenOnlyOfficeEditor?: () => void;
+  onOpenDocumentEditor?: () => void;
 }
 
 export const DocumentEditor: React.FC<DocumentEditorProps> = ({
@@ -18,11 +18,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   onFileUpload,
   tags,
   onTagCreate,
-  onOpenOnlyOfficeEditor,
+  onOpenDocumentEditor,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
-  const [showOnlyOfficeInfo, setShowOnlyOfficeInfo] = useState(false);
+  const [showEditorInfo, setShowEditorInfo] = useState(false);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -94,20 +94,20 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               Upload DOCX
             </button>
             <button
-              onClick={onOpenOnlyOfficeEditor}
+              onClick={onOpenDocumentEditor}
               className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 hover:shadow-md touch-manipulation"
-              onMouseEnter={() => setShowOnlyOfficeInfo(true)}
-              onMouseLeave={() => setShowOnlyOfficeInfo(false)}
+              onMouseEnter={() => setShowEditorInfo(true)}
+              onMouseLeave={() => setShowEditorInfo(false)}
             >
               <Edit className="w-4 h-4 mr-2" />
-              Use My Editor
+              Use Document Editor
             </button>
           </div>
         </div>
       </div>
 
       {/* OnlyOffice Info Tooltip */}
-      {showOnlyOfficeInfo && (
+      {showEditorInfo && (
         <div className="border-b border-gray-200/50 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mr-0 sm:mr-4 self-center sm:self-auto">
@@ -117,11 +117,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-2">
                 <Sparkles className="w-5 h-5 text-blue-600 mx-auto sm:mx-0" />
                 <p className="text-sm sm:text-base font-bold text-blue-900 mt-1 sm:mt-0">
-                  My Editor Integration
+                  Document Editor Integration
                 </p>
               </div>
               <p className="text-xs sm:text-sm text-blue-800 leading-relaxed">
-                Create or edit documents directly in My Editor's full-featured editor. 
+                Create or edit documents directly in our full-featured document editor. 
                 <span className="hidden sm:inline"> All changes will be saved back to your template library.</span>
               </p>
             </div>
@@ -221,11 +221,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               </button>
               
               <button
-                onClick={onOpenOnlyOfficeEditor}
+                onClick={onOpenDocumentEditor}
                 className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 border border-gray-300 rounded-2xl shadow-lg text-sm sm:text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 hover:shadow-xl transform hover:scale-105 active:scale-95 touch-manipulation"
               >
                 <Edit className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
-                Use My Editor
+                Use Document Editor
               </button>
             </div>
           </div>
