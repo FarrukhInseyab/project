@@ -438,11 +438,11 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
               </p>
               {!searchTerm && selectedCategory === 'all' && (
                 <button
-                  onClick={handleNewTemplateClick}
+                  onClick={() => onPreviewTemplate(template)}
                   className="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 touch-manipulation"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Create First Template
+                  Preview
                 </button>
               )}
             </div>
