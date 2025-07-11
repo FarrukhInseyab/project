@@ -208,20 +208,13 @@ export const LoginForm: React.FC = () => {
                   setError('');
                 }}
                 className="block mt-2 text-sm text-gray-500 hover:text-gray-700 touch-manipulation"
-            >
-              {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-            </button>
+              >
+                Forgot your password?
+              </button>
+            )}
           </div>
 
           {/* Features Preview */}
-          {mode === 'login' && (
-            <button
-              onClick={() => setMode('forgot')}
-              className="mt-4 text-sm text-gray-500 hover:text-gray-700 touch-manipulation"
-            >
-              Forgot your password?
-            </button>
-          )}
           <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
             <div className="flex items-center justify-center space-x-2 mb-3">
               <Sparkles className="w-4 h-4 text-blue-600" />
