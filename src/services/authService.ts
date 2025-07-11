@@ -45,34 +45,21 @@ export class AuthService {
   }
 
   static async resetPassword(email: string) {
-    try {
-      // Configure the reset password email
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) throw error;
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to send reset password email:', error);
-      throw error;
-    }
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) throw error;
+    return data;
   }
 
-  static async updatePassword(newPassword: string) {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-      
-      if (error) throw error;
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to update password:', error);
-      throw error;
-    }
+  static async updatePassword(password: string) {
+    const { data, error } = await supabase.auth.updateUser({
+      password: password
+    });
+
+    if (error) throw error;
+    return data;
   }
 
   static async signOut() {

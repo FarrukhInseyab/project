@@ -71,6 +71,26 @@ export const useAuth = () => {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    try {
+      const result = await AuthService.resetPassword(email);
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    setLoading(true);
+    try {
+      const result = await AuthService.updatePassword(password);
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signOut = async () => {
     setLoading(true);
     try {
@@ -86,6 +106,8 @@ export const useAuth = () => {
     loading,
     signUp,
     signIn,
+    resetPassword,
+    updatePassword,
     resetPassword,
     updatePassword,
     signOut,
