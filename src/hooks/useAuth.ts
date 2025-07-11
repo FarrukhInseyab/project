@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { AuthService } from '../services/authService';
+import { ActivityService } from '../services/activityService';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -39,7 +40,31 @@ export const useAuth = () => {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const result = await AuthService.signIn(email, password);
+      const result = await AuthService.signIn(email, password);      
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    setLoading(true);
+    try {
+      const result = await AuthService.resetPassword(email);
+      // Log password reset request activity
+      await ActivityService.logActivity('password_reset_requested', 'user', email);
+      return result;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    setLoading(true);
+    try {
+      const result = await AuthService.updatePassword(password);
+      // Log password update activity
+      await ActivityService.logActivity('password_updated', 'user');
       return result;
     } finally {
       setLoading(false);
@@ -61,6 +86,8 @@ export const useAuth = () => {
     loading,
     signUp,
     signIn,
+    resetPassword,
+    updatePassword,
     signOut,
     isAuthenticated: !!user
   };

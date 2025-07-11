@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { LogIn, UserPlus, Mail, Lock, User, Building, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, User, Building, Eye, EyeOff, Sparkles, KeyRound, ArrowLeft } from 'lucide-react';
 
 export const LoginForm: React.FC = () => {
-  const { signIn, signUp, loading } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const { signIn, signUp, resetPassword, loading } = useAuth();
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -19,13 +19,17 @@ export const LoginForm: React.FC = () => {
     setError('');
 
     try {
-      if (isSignUp) {
+      if (mode === 'signup') {
         await signUp(formData.email, formData.password, {
           full_name: formData.full_name,
           company: formData.company
         });
-      } else {
+      } else if (mode === 'login') {
         await signIn(formData.email, formData.password);
+      } else if (mode === 'forgot') {
+        await resetPassword(formData.email);
+        setError('');
+        alert('Password reset instructions have been sent to your email.');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
@@ -39,8 +43,16 @@ export const LoginForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-3 sm:p-4 mobile-container">
       <div className="max-w-md w-full">
-        {/* Header */}
+        {/* Header with back button for forgot password */}
         <div className="text-center mb-6 sm:mb-8">
+          {mode === 'forgot' && (
+            <button 
+              onClick={() => setMode('login')}
+              className="absolute left-4 top-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-all duration-200"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
             <img 
               src="/go-ar-logo.png" 
@@ -55,14 +67,18 @@ export const LoginForm: React.FC = () => {
             </div>
           </div>
           <p className="text-sm sm:text-base text-gray-600">
-            {isSignUp ? 'Create your account' : 'Welcome back'}
+            {mode === 'signup' && 'Create your account'}
+            {mode === 'login' && 'Welcome back'}
+            {mode === 'forgot' && (
+              <span className="text-blue-600 font-medium">Reset your password</span>
+            )}
           </p>
         </div>
 
         {/* Form */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {isSignUp && (
+            {mode === 'signup' && (
               <>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -115,7 +131,7 @@ export const LoginForm: React.FC = () => {
               </div>
             </div>
 
-            <div>
+            {mode !== 'forgot' && <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Password
               </label>
@@ -138,12 +154,12 @@ export const LoginForm: React.FC = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {isSignUp && (
+              {mode === 'signup' && (
                 <p className="text-xs text-gray-500 mt-1">
                   Password must be at least 6 characters long
                 </p>
               )}
-            </div>
+            </div>}
 
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
@@ -156,31 +172,56 @@ export const LoginForm: React.FC = () => {
               disabled={loading}
               className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-xl shadow-sm text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
-              {loading ? (
+              {loading && (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              ) : isSignUp ? (
+              )}
+              {!loading && mode === 'signup' && (
                 <UserPlus className="w-5 h-5 mr-2" />
-              ) : (
+              )}
+              {!loading && mode === 'login' && (
                 <LogIn className="w-5 h-5 mr-2" />
               )}
-              {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
+              {!loading && mode === 'forgot' && (
+                <KeyRound className="w-5 h-5 mr-2" />
+              )}
+              {loading ? 'Please wait...' : 
+               mode === 'signup' ? 'Create Account' : mode === 'login' ? 'Sign In' : 'Send Reset Link'}
             </button>
           </form>
 
           <div className="mt-4 sm:mt-6 text-center">
             <button
               onClick={() => {
-                setIsSignUp(!isSignUp);
+                setMode(mode === 'login' ? 'signup' : 'login');
                 setError('');
                 setFormData({ email: '', password: '', full_name: '', company: '' });
               }}
               className="text-sm text-blue-600 hover:text-blue-800 font-medium touch-manipulation"
+            >
+              {mode === 'signup' ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            </button>
+            
+            {mode === 'login' && (
+              <button
+                onClick={() => {
+                  setMode('forgot');
+                  setError('');
+                }}
+                className="block mt-2 text-sm text-gray-500 hover:text-gray-700 touch-manipulation"
             >
               {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
             </button>
           </div>
 
           {/* Features Preview */}
+          {mode === 'login' && (
+            <button
+              onClick={() => setMode('forgot')}
+              className="mt-4 text-sm text-gray-500 hover:text-gray-700 touch-manipulation"
+            >
+              Forgot your password?
+            </button>
+          )}
           <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
             <div className="flex items-center justify-center space-x-2 mb-3">
               <Sparkles className="w-4 h-4 text-blue-600" />
