@@ -2,7 +2,7 @@ import { EmailService } from './services/emailService';
 
 /**
  * Test script to verify email functionality
- * Run this script with: npx ts-node src/emailTest.ts
+ * Run this script with: npm run test:email
  */
 async function testEmailService() {
   console.log('🔄 Testing email service...');
@@ -16,7 +16,7 @@ async function testEmailService() {
     process.exit(1);
   }
   
-  // Test email address - CHANGE THIS to your email
+  // Test email address - using the provided email
   const testEmail = 'alerts@decisions.social';
   
   // Test sending a text email
