@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { KeyRound, Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { EmailService } from '../services/emailService';
 
 export const ResetPassword: React.FC = () => {
   const { updatePassword, loading } = useAuth();
@@ -11,14 +12,17 @@ export const ResetPassword: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Check if we have a valid hash in the URL
   useEffect(() => {
     const hash = window.location.hash;
-    if (!hash || !hash.includes('type=recovery')) {
+    const token = searchParams.get('token');
+    
+    if ((!hash || !hash.includes('type=recovery')) && !token) {
       setError('Invalid or expired password reset link. Please request a new one.');
     }
-  }, []);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +42,17 @@ export const ResetPassword: React.FC = () => {
     try {
       await updatePassword(password);
       setSuccess(true);
+
+      // Send confirmation email
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          await EmailService.sendPasswordUpdatedEmail(user.email);
+        }
+      } catch (emailError) {
+        console.error('Failed to send password updated email:', emailError);
+        // Don't fail the process if email fails
+      }
       
       // Redirect to login after 3 seconds
       setTimeout(() => {
