@@ -24,6 +24,7 @@ import { TemplateEditOptions } from './TemplateEditOptions';
 import { TemplateVersionService } from '../services/templateVersionService';
 import { TemplateVersionManager } from './TemplateVersionManager';
 import { OnlyOfficeService } from '../services/onlyOfficeService';
+import { EmailService } from '../services/emailService';
 
 export const MainApp: React.FC = () => {
   const { signOut, user } = useAuth();
@@ -423,6 +424,20 @@ export const MainApp: React.FC = () => {
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  // Function to send notification email after document generation
+  const sendDocumentGenerationEmail = async (documentName: string, recipientEmail: string) => {
+    try {
+      await EmailService.sendTemplateEmail(
+        recipientEmail,
+        'document_generated',
+        { documentName }
+      );
+      console.log('Document generation notification email sent successfully');
+    } catch (error) {
+      console.error('Failed to send document generation email:', error);
     }
   };
 

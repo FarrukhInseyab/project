@@ -8,6 +8,7 @@ import { Tag, Mapping, IncomingData, DocumentTemplate } from '../types';
 import { GenerationService } from '../services/generationService';
 import { StorageService } from '../services/storageService';
 import { PoDAPIService } from '../services/podapiService';
+import { EmailService } from '../services/emailService';
 import { saveAs } from 'file-saver';
 
 interface DocumentGeneratorProps {
@@ -276,10 +277,28 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
       
       setGenerationStatus('success');
       setDocumentsGenerated(maxDocuments);
-      setStatusMessage(hasArrayData 
+      const successMessage = hasArrayData 
         ? `🎉 Successfully generated and downloaded ${maxDocuments} DOCX documents!` 
-        : '🎉 DOCX document successfully generated and downloaded!'
-      );
+        : '🎉 DOCX document successfully generated and downloaded!';
+      setStatusMessage(successMessage);
+      
+      // Send email notification if we have a template name
+      if (templateId) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.email) {
+            await EmailService.sendTemplateEmail(
+              user.email,
+              'document_generated',
+              { documentName: originalFile.name.replace('.docx', '_populated.docx') }
+            );
+            console.log('✅ Document generation notification email sent');
+          }
+        } catch (emailError) {
+          console.error('⚠️ Failed to send email notification:', emailError);
+          // Don't fail the process if email fails
+        }
+      }
     } catch (error) {
       console.error('❌ Error generating DOCX:', error);
       
@@ -508,10 +527,28 @@ export const DocumentGenerator: React.FC<DocumentGeneratorProps> = ({
       
       setGenerationStatus('success');
       setDocumentsGenerated(allGeneratedFiles.length);
-      setStatusMessage(hasArrayData 
+      const successMessage = hasArrayData 
         ? `🎉 Successfully generated and downloaded ${generatedDocuments.length} documents in both DOCX and PDF formats!` 
-        : '🎉 Document successfully generated and downloaded in both DOCX and PDF formats!'
-      );
+        : '🎉 Document successfully generated and downloaded in both DOCX and PDF formats!';
+      setStatusMessage(successMessage);
+      
+      // Send email notification if we have a template name
+      if (templateId) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.email) {
+            await EmailService.sendTemplateEmail(
+              user.email,
+              'document_generated',
+              { documentName: originalFile.name.replace('.docx', '_populated.docx') }
+            );
+            console.log('✅ Document generation notification email sent');
+          }
+        } catch (emailError) {
+          console.error('⚠️ Failed to send email notification:', emailError);
+          // Don't fail the process if email fails
+        }
+      }
     } catch (error) {
       console.error('❌ Error generating PDF:', error);
       
