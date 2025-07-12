@@ -7,7 +7,7 @@
     "dev": "vite",
     "start": "node --require ts-node/register server.ts",
     "start:dev": "nodemon --exec node --require ts-node/register server.ts",
-    "test:email": "ts-node src/emailTest.ts",
+    "test:email": "npx ts-node src/emailTest.ts",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
