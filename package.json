@@ -10,14 +10,12 @@
     "test:email": "node --loader ts-node/esm src/emailTest.ts",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "test:email": "node --loader ts-node/esm src/emailTest.ts"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-build-decoupled-document": "^44.3.0",
     "@ckeditor/ckeditor5-react": "^11.0.0",
     "@supabase/supabase-js": "^2.39.0",
-    "@types/nodemailer": "^6.4.14",
     "cors": "^2.8.5",
     "docx": "^8.5.0",
     "docx-templates": "^4.14.1",
@@ -27,7 +25,6 @@
     "file-saver": "^2.0.5",
     "lucide-react": "^0.344.0",
     "mammoth": "^1.6.0",
-    "nodemailer": "^6.9.9",
     "nodemailer": "^7.0.5",
     "pizzip": "^3.2.0",
     "react": "^18.3.1",
