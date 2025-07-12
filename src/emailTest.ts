@@ -17,7 +17,7 @@ async function testEmailService() {
   }
   
   // Test email address - CHANGE THIS to your email
-  const testEmail = 'your.email@example.com';
+  const testEmail = 'alerts@decisions.social';
   
   // Test sending a text email
   console.log('\n📧 Sending a text email...');
