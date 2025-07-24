@@ -81,7 +81,7 @@ export const OnlyOfficeEditor: React.FC<OnlyOfficeEditorProps> = ({
     setFallbackMode(false);
  
     const settings = await OnlyOfficeService.loadSettings();
-    const currentServerUrl = settings.serverUrl;
+    const currentServerUrl = settings.serverUrl || 'http://172.22.25.154:8082';;
     setServerUrl(currentServerUrl);
     console.log('Using OnlyOffice server URL:', currentServerUrl);
  
@@ -92,11 +92,16 @@ export const OnlyOfficeEditor: React.FC<OnlyOfficeEditorProps> = ({
       return;
     }
  
-    const existingScript = document.querySelector(`script[src="${currentServerUrl}/web-apps/apps/api/documents/api.js"]`);
+   
+    //setServerUrl(currentServerUrl);
+    console.log('🟢 Using OnlyOffice server URL:', currentServerUrl);
+
+    const scriptSrc = `${currentServerUrl}/web-apps/apps/api/documents/api.js`;
+    const existingScript = document.querySelector(`script[src="${scriptSrc}"]`);
     if (!existingScript) {
       console.log('Injecting API script...');
       const script = document.createElement('script');
-      script.src = `${currentServerUrl}/web-apps/apps/api/documents/api.js`;
+      script.src = scriptSrc;
       script.async = true;
  
       const scriptLoadTimeout = setTimeout(() => {
@@ -167,118 +172,152 @@ const retryLoadWithBackoff = () => {
 
 
   const initializeEditor = async () => {
-    try {
-      if (!window.DocsAPI) {
-        if (connectionAttempts < maxConnectionAttempts) {
-          setConnectionAttempts(prev => prev + 1);
-
-          const retryDelay = Math.min(2000 * Math.pow(2, connectionAttempts), 10000); // 2s, 4s, 8s, max 10s
-          console.log(`Retrying My Editor API initialization (attempt ${connectionAttempts + 1}/${maxConnectionAttempts}) after ${retryDelay}ms...`);
-          
-          setTimeout(() => loadOnlyOfficeAPI(), retryDelay);
-          return;
-        }
-        throw new Error('My Editor API not available after multiple attempts');
-      }
-
-
-      let documentConfig;
-      if ((mode === 'edit' || mode === 'view') && templateId) {
-        documentConfig = await prepareExistingDocument();
-      } else {
-        documentConfig = await prepareNewDocument();
-      }
-
-      if (!documentConfig) {
-        throw new Error('Failed to prepare document configuration');
-      }
-
-      const container = document.getElementById('onlyoffice-editor');
-      if (container) container.innerHTML = '';
-
-      console.log('Initializing editor with config:', documentConfig);
-      docEditorRef.current = new window.DocsAPI.DocEditor('onlyoffice-editor', documentConfig);
-
-      setLoading(false);
-      console.log('My Editor editor initialized successfully');
-    } catch (error) {
-      console.error('Error initializing My Editor editor:', error);
-      setError(`Failed to initialize editor: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setFallbackMode(true);
-      setLoading(false);
+  try {
+    if (!window.DocsAPI) {
+      throw new Error('DocsAPI not loaded yet');
     }
-  };
+
+    let documentConfig;
+    if ((mode === 'edit' || mode === 'view') && templateId) {
+      documentConfig = await prepareExistingDocument();
+    } else {
+      documentConfig = await prepareNewDocument();
+    }
+
+    if (!documentConfig) {
+      throw new Error('Failed to prepare document configuration');
+    }
+
+    // Wait for DOM to be ready before initializing
+    requestAnimationFrame(() => {
+      const container = document.getElementById('onlyoffice-editor');
+      if (!container) {
+        throw new Error('Editor container not available');
+      }
+
+      container.innerHTML = '';
+      docEditorRef.current = new window.DocsAPI.DocEditor('onlyoffice-editor', documentConfig);
+      setLoading(false);
+    });
+
+
+  } catch (error) {
+    console.error('Error initializing editor:', error);
+    setError(`Failed to initialize editor: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    setFallbackMode(true);
+    setLoading(false);
+  }
+};
+
+
+const waitForEditorContainer = async (timeout = 5000) => {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const container = document.getElementById('onlyoffice-editor');
+    if (container) return container;
+    await new Promise(res => setTimeout(res, 100));
+  }
+  throw new Error('Editor container not available');
+};
+
 
   const prepareExistingDocument = async () => {
-    if (!templateId) throw new Error('Template ID required for editing');
+  if (!templateId) throw new Error('Template ID is required for editing');
 
-    try {
-      const template = await TemplateService.getTemplate(templateId);
+  try {
+    const template = await TemplateService.getTemplate(templateId);
+    console.log('Loaded template:', template);
 
-      // ✅ Call OnlyOfficeService to get signed URL
-      const url = await OnlyOfficeService.getDocumentUrl(templateId);
-      setDocumentUrl(url);
-      const key = `template_${templateId}_${Date.now()}`;
-      setDocumentKey(key);
+    let url = await OnlyOfficeService.getDocumentUrl(templateId);
+    console.log('Returned document URL:', url);
 
-      return {
-        type: 'desktop',
-        width: '100%',
-        height: '600px',
-        documentType: 'word',
-        documentServerUrl: 'http://172.22.25.154:8082',
-        document: {
-          fileType: 'docx',
-          key: key,
-          title: template.name,
-          url: url,
-          permissions: {
-            edit: mode === 'edit', // Only allow editing in edit mode
-            download: true,
-            print: true,
-            review: mode === 'edit',
-            comment: mode === 'edit'
-          }
-        },
-        editorConfig: {
-          mode: mode === 'edit' ? 'edit' : 'view', // Set mode based on prop
-          lang: 'en',
-          callbackUrl: '',
-          user: {
-            id: 'user-1',
-            name: 'User'
-          },
-          customization: {
-            autosave: false,
-            forcesave: false,
-            compactToolbar: false,
-            toolbar: true,
-            statusBar: true,
-            chat: false,
-            comments: false,
-            zoom: 100
-          }
-        },
-        events: {
-          onDocumentReady: () => console.log('Document ready for editing'),
-          onError: (event: any) => {
-            console.error('My Editor editor error:', event);
-            setError('Editor error occurred');
-          }
-        }
-      };
-    } catch (error) {
-      console.error('Error preparing existing document:', error);
-      throw error;
+    // Validate URL
+    if (!url || typeof url !== 'string' || !url.startsWith('http')) {
+      console.warn('Invalid or empty URL returned. Falling back to testing URL.');
+      url = 'https://quranlinkacademy.com/latest.docx'; // ✅ fallback for debugging
+    } else {
+      // Optional HEAD check to ensure it's reachable
+      const accessible = await checkUrlAccessible(url);
+      if (!accessible) {
+        console.warn('Document URL not accessible. Falling back to testing URL.');
+        url = 'https://quranlinkacademy.com/latest.docx'; // ✅ fallback for debugging
+      }
     }
-  };
+
+    const key = `template_${templateId}_${Date.now()}`;
+    setDocumentUrl(url);
+    setDocumentKey(key);
+
+    return {
+      type: 'desktop',
+      width: '100%',
+      height: '600px',
+      documentType: 'word',
+      documentServerUrl: serverUrl, // dynamically set in loadOnlyOfficeAPI
+      document: {
+        fileType: 'docx',
+        key,
+        title: template.name || 'Template Document',
+        url,
+        permissions: {
+          edit: mode === 'edit',
+          download: true,
+          print: true,
+          review: mode === 'edit',
+          comment: mode === 'edit',
+        }
+      },
+      editorConfig: {
+        mode: mode === 'edit' ? 'edit' : 'view',
+        lang: 'en',
+        callbackUrl: '', // Can be extended to handle save callback
+        user: {
+          id: 'user-1',
+          name: 'User'
+        },
+        customization: {
+          autosave: false,
+          forcesave: false,
+          compactToolbar: false,
+          toolbar: true,
+          statusBar: true,
+          chat: false,
+          comments: false,
+          zoom: 100
+        }
+      },
+      events: {
+        onDocumentReady: () => console.log('OnlyOffice document ready for editing.'),
+        onError: (event: any) => {
+          console.error('OnlyOffice editor encountered an error:', event);
+          setError('Editor failed to load the document. Please check the source file.');
+        }
+      }
+    };
+  } catch (error) {
+    console.error('Error in prepareExistingDocument:', error);
+    throw new Error(`Could not prepare the existing document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Optional utility to verify URL accessibility
+const checkUrlAccessible = async (url: string): Promise<boolean> => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.warn('HEAD request failed for URL:', url, error);
+    return false;
+  }
+};
+
 
     const prepareNewDocument = async () => {
   try {
     let blankDocxUrl;
     try {
       console.log('Attempting to load empty template from Supabase storage...');
-      blankDocxUrl = "https://qwdybygdvylpnyfdtfmi.supabase.co/storage/v1/object/sign/empty-template/emptytemplate.docx?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8xMDQ0NTk4Yy02MGViLTQ3MTUtOGEyOC0zODZmYzZlMDFiNWUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJlbXB0eS10ZW1wbGF0ZS9lbXB0eXRlbXBsYXRlLmRvY3giLCJpYXQiOjE3NTE2NjIxMzcsImV4cCI6MTc1MjI2NjkzN30.iIntXqaN8E5ONSKGn7entftReiJYT7w8Ds9Jb9vpPjw";
+      blankDocxUrl = "https://quranlinkacademy.com/latest.docx";
 
       console.log('Empty template loaded successfully from storage');
     } catch (storageError) {
@@ -838,36 +877,44 @@ const tryDownloadForTagManagement = () => {
         </div>
 
         {/* Editor Container */}
-        <div className="flex-1 overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="flex flex-col items-center">
-                <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mb-4" />
-                <p className="text-gray-600">Loading editor...</p>
-              </div>
-            </div>
-          ) : fallbackMode ? (
-            <div className="p-6 h-full">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
-                <div className="flex items-center space-x-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600" />
-                  <p className="text-sm text-yellow-800">
-                    My Editor editor is not available. Using fallback text editor.
-                  </p>
-                </div>
-              </div>
-              <div className="border border-gray-300 rounded-xl h-[500px] overflow-auto p-4">
-                <textarea
-                  className="w-full h-full border border-gray-200 rounded-lg p-4 text-gray-700"
-                  placeholder="Fallback text editor not implemented."
-                  disabled
-                />
-              </div>
-            </div>
-          ) : (
-            <div id="onlyoffice-editor" className="h-full min-h-[500px]"></div>
-          )}
+       <div className="flex-1 overflow-hidden relative">
+  {/* Always render the editor container when not in fallback mode */}
+  {!fallbackMode && (
+    <div id="onlyoffice-editor" className="h-full min-h-[500px]" />
+  )}
+
+  {/* Loading overlay */}
+  {loading && !fallbackMode && (
+    <div className="absolute inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
+      <div className="flex flex-col items-center">
+        <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mb-4" />
+        <p className="text-gray-600">Loading editor...</p>
+      </div>
+    </div>
+  )}
+
+  {/* Fallback mode view */}
+  {fallbackMode && (
+    <div className="p-6 h-full">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+        <div className="flex items-center space-x-2">
+          <AlertCircle className="w-5 h-5 text-yellow-600" />
+          <p className="text-sm text-yellow-800">
+            My Editor editor is not available. Using fallback text editor.
+          </p>
         </div>
+      </div>
+      <div className="border border-gray-300 rounded-xl h-[500px] overflow-auto p-4">
+        <textarea
+          className="w-full h-full border border-gray-200 rounded-lg p-4 text-gray-700"
+          placeholder="Fallback text editor not implemented."
+          disabled
+        />
+      </div>
+    </div>
+  )}
+</div>
+
 
         {/* Footer */}
         <div className="border-t border-gray-200 p-6 bg-gray-50">
